@@ -1,6 +1,5 @@
-![](https://img.shields.io/badge/Microverse-blueviolet)
 
-# Project Name
+# Diabetic App Backend
 
 > Description the project.
 
