@@ -140,12 +140,27 @@
 # async def read_own_items(current_user: User = Depends(get_current_active_user)):
 #     return [{"item_id": 1, "owner": current_user}]
 
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from app.api.auth_router import router as auth_router
 from app.api.user_router import router as user_router
 
 app = FastAPI()
 
+# Custom exception handler for HTTPException
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": [{
+                "loc": ["string", 0],  # Example location, adjust as needed
+                "msg": exc.detail,  # Detail from the exception
+                "type": "authorization"  # Example type, adjust as needed
+            }]
+        }
+    )
+
+# Include routers from different parts of the application
 app.include_router(auth_router)
 app.include_router(user_router)

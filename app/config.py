@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 # Get the DATABASE_URL from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/dbname")
+DATABASE_URL = "postgresql://postgres:Stark*369@localhost:5432/glycobuddy"
 
 # If using PostgreSQL
 engine = create_engine(DATABASE_URL, echo=True, pool_size=5, max_overflow=20)

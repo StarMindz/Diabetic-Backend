@@ -3,6 +3,8 @@ from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
+from app.models.user_model import User as UserModel
 
 # Constants
 SECRET_KEY = "51e10bb3aaad8bea49197e824a9d77339da6a38542fda8460f40d8c0ba5d78d5"  # Use a strong, secret value for JWT encoding/decoding
@@ -59,6 +61,13 @@ def verify_password_reset_token(token: str) -> str:
         return None
 
 # Authentication Middleware
+def authenticate_user(db: Session, email: str, password: str):
+    """Authenticate user by email and password."""
+    user = db.query(UserModel).filter(UserModel.email == email).first()
+    if not user or not verify_password(password, user.hashed_password):
+        return False
+    return user
+
 def get_current_user(token: str = Depends(oauth2_scheme)):
     """Extract the current user from the JWT token."""
     credentials_exception = HTTPException(
