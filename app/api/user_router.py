@@ -36,10 +36,14 @@ def update_user_profile(email: str, profile_data: UserProfileUpdate, db: Session
         user.profile = UserProfile()
         db.add(user.profile)
 
-    for key, value in profile_data.items():
-        setattr(user.profile, key, value)
+    for key, value in profile_data.dict().items():
+        if value is not None:  # This checks if the provided field value is not None, preventing overwriting with None
+            setattr(user.profile, key, value)
 
     db.commit()
     db.refresh(user)
 
-    return user
+    return {
+        "message": "User profile updated successfully",
+        "profile": user.profile
+    }
