@@ -6,7 +6,8 @@ from sqlalchemy import pool
 from alembic import context
 
 from app.config import Base
-from app.models.user_model import User, UserProfile
+from app.models.user_model import *
+from app.models.streak_model import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

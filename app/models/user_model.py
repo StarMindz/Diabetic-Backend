@@ -11,22 +11,22 @@ class User(Timestamp, Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-
-    profile = relationship("UserProfile", back_populates="owner", uselist=False)
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+    streak = relationship("Streak", back_populates="user", uselist=False)
 
 class UserProfile(Timestamp, Base):
     __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
-    height = Column(Float)
-    weight = Column(Float)
-    age = Column(Integer)
-    gender = Column(String)
-    country = Column(String)
-    alergy = Column(String)
-    medical_issue = Column(String)
-    diabetic_type = Column(String)  
-    medication = Column(String)
+    height = Column(Float, nullable=True)
+    weight = Column(Float, nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    alergy = Column(String, nullable=True)
+    medical_issue = Column(String, nullable=True)
+    diabetic_type = Column(String, nullable=True)  
+    medication = Column(String, nullable=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-    owner = relationship("User", back_populates="profile")
+    user = relationship("User", back_populates="profile")

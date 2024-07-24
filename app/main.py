@@ -144,6 +144,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from app.api.auth_router import router as auth_router
 from app.api.user_router import router as user_router
+from app.api.scan_router import router as scan_router
 
 app = FastAPI()
 
@@ -164,3 +165,4 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 # Include routers from different parts of the application
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(scan_router)

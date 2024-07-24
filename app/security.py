@@ -15,7 +15,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiry time
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 token retrieval
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/signin")
 
 # Hashing Passwords
 def get_password_hash(password: str) -> str:
@@ -34,12 +34,14 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
+    
 def decode_access_token(token: str):
-    """Decode JWT token and return the payload or None if invalid."""
+    """Decode JWT token and check if it's still valid (not expired)."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload if payload.get('exp') > datetime.utcnow() else None
+        if payload.get('exp') < datetime.utcnow().timestamp():
+            raise JWTError("Token has expired")
+        return payload
     except JWTError:
         return None
 
@@ -68,15 +70,33 @@ def authenticate_user(db: Session, email: str, password: str):
         return False
     return user
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_user(db: Session, token: str):
     """Extract the current user from the JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"}
     )
-    payload = decode_access_token(token)
-    if payload is None or (email := payload.get('sub')) is None:
-        raise credentials_exception
-    # Implementation to retrieve user from database goes here
-    return {"email": email}  # Dummy user object
+    try:
+        payload = decode_access_token(token)
+        if payload is None or 'sub' not in payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token is invalid or expired",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        email = payload['sub']
+        user = db.query(UserModel).filter(UserModel.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        return user
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )

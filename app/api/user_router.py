@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from app.models.user_model import User as UserModel, UserProfile
 from app.schemas.user_schema import UserProfileUpdate
 from app.database import get_db
-from app.security import get_password_hash
 
 router = APIRouter(tags=["Users"])
 
