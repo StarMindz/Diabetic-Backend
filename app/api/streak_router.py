@@ -10,7 +10,7 @@ from app.models.streak_model import Streak
 router = APIRouter(tags=["Streak"])
 
 @router.post("/set_streak")
-def scan_food(user_email: EmailStr, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+def set_streak(user_email: EmailStr, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     # Assume scanning logic here
     # Update the user's streak
     if (user_email != get_user(db, token).email):
@@ -18,8 +18,8 @@ def scan_food(user_email: EmailStr, db: Session = Depends(get_db), token: str = 
     streak = update_streak(user_email, db)
     return {"message": "Food scanned successfully", "streak": streak.current_streak}
 
-@router.get("/get_streak/{email}")
-def get_user_streak(user_email: str, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+@router.get("/get_streak")
+def get_streak(user_email: EmailStr, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     if (user_email != get_user(db, token).email):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to access this user's streak")
     
