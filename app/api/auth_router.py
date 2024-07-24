@@ -59,6 +59,6 @@ async def read_users_me(token: str = Depends(oauth2_scheme), db: Session = Depen
     user = get_user(db, token)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return user
+    return user.profile
 
 
