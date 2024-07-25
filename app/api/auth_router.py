@@ -11,10 +11,6 @@ from app.schemas.user_schema import SignupUser
 router = APIRouter(tags=["Authentication"])
 
 
-# This should be defined somewhere, possibly in your config or security.py
-ACCESS_TOKEN_EXPIRE_MINUTES = 2880 #48 hours 
-
-
 @router.post("/signup")
 def signup_user(user_details: SignupUser, db: Session = Depends(get_db)):
     db_user = db.query(UserModel).filter(UserModel.email == user_details.email).first()
@@ -38,10 +34,8 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
             detail= "Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email},  # Assuming the identification is by email
-        expires_delta=access_token_expires
+        user,  # Assuming the identification is by email
     )
         # Set a secure cookie with the access token
     # response.set_cookie(

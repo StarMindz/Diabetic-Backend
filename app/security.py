@@ -9,7 +9,7 @@ from app.models.user_model import User as UserModel
 # Constants
 SECRET_KEY = "51e10bb3aaad8bea49197e824a9d77339da6a38542fda8460f40d8c0ba5d78d5"  # Use a strong, secret value for JWT encoding/decoding
 ALGORITHM = "HS256"  # Algorithm used for JWT
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Token expiry time
+ACCESS_TOKEN_EXPIRE_MINUTES = 2800  # Token expiry time
 
 # Password hashing configuration
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -27,12 +27,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 # JWT Handling
-def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
+def create_access_token(data: UserModel) -> str:
     """Create a JWT token that stores user data and has an expiry."""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    userClaims = {
+        "email": data.email,
+        "user_id": data.id
+    }
+    expire = datetime.utcnow() + (timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    userClaims.update({"exp": expire})
+    encoded_jwt = jwt.encode(userClaims, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
     
 def decode_access_token(token: str):
@@ -49,7 +52,7 @@ def decode_access_token(token: str):
 def generate_password_reset_token(email: str) -> str:
     """Generate a token for resetting password, valid for 1 hour."""
     delta = timedelta(hours=1)
-    data = {"sub": email, "exp": datetime.utcnow() + delta}
+    data = {"email": email, "exp": datetime.utcnow() + delta}
     return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
 def verify_password_reset_token(token: str) -> str:
@@ -58,7 +61,7 @@ def verify_password_reset_token(token: str) -> str:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload['exp'] < datetime.utcnow():
             return None
-        return payload['sub']
+        return payload['email']
     except JWTError:
         return None
 
@@ -79,14 +82,14 @@ def get_user(db: Session, token: str):
     )
     try:
         payload = decode_access_token(token)
-        if payload is None or 'sub' not in payload:
+        if payload is None or 'email' not in payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token is invalid or expired",
                 headers={"WWW-Authenticate": "Bearer"}
             )
 
-        email = payload['sub']
+        email = payload['email']
         user = db.query(UserModel).filter(UserModel.email == email).first()
         if not user:
             raise HTTPException(
