@@ -11,9 +11,6 @@ class UserProfileUpdate(BaseModel):
     diabetic_type: str
     medication: str
 
-    class Config:
-        orm_mode = True
-
 class SignupUser(BaseModel):
     full_name: str
     email: EmailStr
