@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.models.meal_model import Meal, MealPlan
+from app.models.meal_model import Meal, MealPlan, Recipe
 from app.schemas.meal_schema import MealCreate, MealOut, MealPlanOut
 from app.models.user_model import User
-from app.security import oauth2_scheme, get_user
+from app.security import get_user
 from app.database import get_db
 import datetime
 
@@ -27,49 +27,52 @@ def delete_meal_plan_if_empty(db: Session, meal_plan_id: int):
         db.delete(meal_plan)
         db.commit()
 
-@router.post("/breakfast", response_model=MealOut)
-def add_breakfast(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+@router.post("/breakfast")
+def add_breakfast(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal_plan = get_or_create_meal_plan(db, user.id, date)
-    new_meal = meal_plan.add_meal_to_plan(meal=meal, recipe_id=meal.recipe_id, meal_type="breakfast")
+    new_meal = Meal(name=meal.name, image=meal.image, meal_type="breakfast", meal_plan_id=meal_plan.id)
+    if meal.recipe:
+        new_meal.recipe = Recipe(**meal.recipe.dict())
     db.add(new_meal)
     db.commit()
     db.refresh(new_meal)
-    return new_meal
+    return {"message": "Meal Created Successfully", "Meal": new_meal}
 
-@router.post("/lunch", response_model=MealOut)
-def add_lunch(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+@router.post("/lunch")
+def add_lunch(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal_plan = get_or_create_meal_plan(db, user.id, date)
-    new_meal = meal_plan.add_meal_to_plan(meal=meal, recipe_id=meal.recipe_id, meal_type="lunch")
+    new_meal = Meal(name=meal.name, image=meal.image, meal_type="lunch", meal_plan_id=meal_plan.id)
+    if meal.recipe:
+        new_meal.recipe = Recipe(**meal.recipe.dict())
     db.add(new_meal)
     db.commit()
     db.refresh(new_meal)
-    return new_meal
+    return {"message": "Meal Created Successfully", "Meal": new_meal}
 
-@router.post("/dinner", response_model=MealOut)
-def add_dinner(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+@router.post("/dinner")
+def add_dinner(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal_plan = get_or_create_meal_plan(db, user.id, date)
-    new_meal = meal_plan.add_meal_to_plan(meal=meal, recipe_id=meal.recipe_id, meal_type="dinner")
+    new_meal = Meal(name=meal.name, image=meal.image, meal_type="dinner", meal_plan_id=meal_plan.id)
+    if meal.recipe:
+        new_meal.recipe = Recipe(**meal.recipe.dict())
     db.add(new_meal)
     db.commit()
     db.refresh(new_meal)
-    return new_meal
+    return {"message": "Meal Created Successfully", "Meal": new_meal}
 
-@router.post("/snack", response_model=MealOut)
-def add_snack(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+@router.post("/snack")
+def add_snack(meal: MealCreate, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal_plan = get_or_create_meal_plan(db, user.id, date)
-    new_meal = meal_plan.add_meal_to_plan(meal=meal, recipe_id=meal.recipe_id, meal_type="snack")
+    new_meal = Meal(name=meal.name, image=meal.image, meal_type="snack", meal_plan_id=meal_plan.id)
+    if meal.recipe:
+        new_meal.recipe = Recipe(**meal.recipe.dict())
     db.add(new_meal)
     db.commit()
     db.refresh(new_meal)
-    return new_meal
+    return {"message": "Meal Created Successfully", "Meal": new_meal}
 
 @router.delete("/breakfast/{meal_id}", response_model=MealOut)
-def delete_breakfast(meal_id: int, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+def delete_breakfast(meal_id: int, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal = db.query(Meal).filter(Meal.id == meal_id, Meal.meal_type == "breakfast", Meal.meal_plan.has(user_id=user.id, date=date)).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
@@ -77,11 +80,10 @@ def delete_breakfast(meal_id: int, date: datetime.date, db: Session = Depends(ge
     db.delete(meal)
     db.commit()
     delete_meal_plan_if_empty(db, meal_plan_id)
-    return meal
+    return {"message": "Meal Deleted Successfully", "Meal": meal}
 
 @router.delete("/lunch/{meal_id}", response_model=MealOut)
-def delete_lunch(meal_id: int, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+def delete_lunch(meal_id: int, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal = db.query(Meal).filter(Meal.id == meal_id, Meal.meal_type == "lunch", Meal.meal_plan.has(user_id=user.id, date=date)).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
@@ -89,11 +91,10 @@ def delete_lunch(meal_id: int, date: datetime.date, db: Session = Depends(get_db
     db.delete(meal)
     db.commit()
     delete_meal_plan_if_empty(db, meal_plan_id)
-    return meal
+    return {"message": "Meal Deleted Successfully", "Meal": meal}
 
 @router.delete("/dinner/{meal_id}", response_model=MealOut)
-def delete_dinner(meal_id: int, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+def delete_dinner(meal_id: int, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal = db.query(Meal).filter(Meal.id == meal_id, Meal.meal_type == "dinner", Meal.meal_plan.has(user_id=user.id, date=date)).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
@@ -101,11 +102,10 @@ def delete_dinner(meal_id: int, date: datetime.date, db: Session = Depends(get_d
     db.delete(meal)
     db.commit()
     delete_meal_plan_if_empty(db, meal_plan_id)
-    return meal
+    return {"message": "Meal Deleted Successfully", "Meal": meal}
 
 @router.delete("/snack/{meal_id}", response_model=MealOut)
-def delete_snack(meal_id: int, date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+def delete_snack(meal_id: int, date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal = db.query(Meal).filter(Meal.id == meal_id, Meal.meal_type == "snack", Meal.meal_plan.has(user_id=user.id, date=date)).first()
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
@@ -113,11 +113,10 @@ def delete_snack(meal_id: int, date: datetime.date, db: Session = Depends(get_db
     db.delete(meal)
     db.commit()
     delete_meal_plan_if_empty(db, meal_plan_id)
-    return meal
+    return {"message": "Meal Deleted Successfully", "Meal": meal}
 
 @router.get("/{date}", response_model=MealPlanOut)
-def get_meal_plan(date: datetime.date, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    user = get_user(db, token)
+def get_meal_plan(date: datetime.date, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     meal_plan = db.query(MealPlan).filter(MealPlan.user_id == user.id, MealPlan.date == date).first()
     if not meal_plan:
         raise HTTPException(status_code=404, detail="Meal plan not found")

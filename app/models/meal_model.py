@@ -15,9 +15,9 @@ class MealPlan(Timestamp, Base):
 
     user = relationship("User", back_populates="meal_plans")
 
-    def add_meal_to_plan(meal_plan, recipe, meal_type):
-        meal = Meal(meal_plan_id=meal_plan.id, recipe_id=recipe.id, meal_type=meal_type)
-        return meal
+    # def add_meal_to_plan(self, recipe, meal_type):
+    #     meal = Meal(meal_plan_id=self.id, recipe_id=recipe.id, meal_type=meal_type)
+    #     return meal
 
 
 # Meal model 
@@ -48,7 +48,8 @@ class Recipe(Timestamp, Base):
     calorie_level = Column(Integer, nullable=False)
     diabetic_friendly = Column(Boolean, nullable=False)
     recommendations = Column(Text, nullable=True)
-    instructions = Column(JSON, nullable=False)  # List of instructions as JSON
+    instructions = Column(JSON, nullable=False) 
+    ingredients = Column(JSON, nullable=False)
     
     meals = relationship("Meal", back_populates="recipe")
 

@@ -145,6 +145,7 @@ from fastapi.responses import JSONResponse
 from app.api.auth_router import router as auth_router
 from app.api.user_router import router as user_router
 from app.api.streak_router import router as streak_router
+from app.api.meal_router import router as meal_router
 
 app = FastAPI()
 
@@ -166,3 +167,4 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(streak_router)
+app.include_router(meal_router)

@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from app.config import Base
 from .mixins import Timestamp
 from app.models.meal_model import Meal, MealPlan
+from app.models.streak_model import Streak
+from app.models.scan_model import ScanHistory
 
 class User(Timestamp, Base):
     __tablename__ = "users"
