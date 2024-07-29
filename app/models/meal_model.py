@@ -44,6 +44,7 @@ class Recipe(Timestamp, Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
+    image = Column(String, nullable=True)
     glycemic_index = Column(Integer, nullable=False)
     calorie_level = Column(Integer, nullable=False)
     diabetic_friendly = Column(Boolean, nullable=False)

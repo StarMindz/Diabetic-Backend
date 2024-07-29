@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.meal_model import Meal, MealPlan, Recipe
 from app.schemas.meal_schema import MealCreate, MealOut, MealPlanOut
+from app.schemas.meal_schema import Recipe as RecipeInput
 from app.models.user_model import User
 from app.security import get_user
 from app.database import get_db
@@ -121,3 +122,4 @@ def get_meal_plan(date: datetime.date, db: Session = Depends(get_db), user:dict 
     if not meal_plan:
         raise HTTPException(status_code=404, detail="Meal plan not found")
     return meal_plan
+

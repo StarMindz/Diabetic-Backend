@@ -146,6 +146,7 @@ from app.api.auth_router import router as auth_router
 from app.api.user_router import router as user_router
 from app.api.streak_router import router as streak_router
 from app.api.meal_router import router as meal_router
+from app.api.recipe_router import router as recipe_router
 
 app = FastAPI()
 
@@ -168,3 +169,4 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(streak_router)
 app.include_router(meal_router)
+app.include_router(recipe_router)

@@ -4,6 +4,7 @@ import datetime
 
 class RecipeOut(BaseModel):
     name: str
+    image: str
     glycemic_index: int
     calorie_level: int
     diabetic_friendly: bool
@@ -31,6 +32,7 @@ class MealPlanOut(BaseModel):
 
 class Recipe(BaseModel):
     name: str
+    image: str
     glycemic_index: int
     calorie_level: int
     diabetic_friendly: bool
