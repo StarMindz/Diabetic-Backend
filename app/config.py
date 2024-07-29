@@ -6,7 +6,7 @@ import os
 
 # Get the DATABASE_URL from environment variables
 # DATABASE_URL = "postgresql://postgres:Stark*369@localhost:5432/glycobuddy"
-LIVE_DATABASE_URL = "postgresql://glycobuddy_database_user:tTPIx1zYECv7ZrUKuz9Ta2gDRDh81VQF@dpg-cqk0c5hu0jms73doftig-a/glycobuddy_database"
+LIVE_DATABASE_URL = "postgresql://glycobuddy_database_user:tTPIx1zYECv7ZrUKuz9Ta2gDRDh81VQF@dpg-cqk0c5hu0jms73doftig-a.oregon-postgres.render.com/glycobuddy_database"
 # If using PostgreSQL
 # engine = create_engine(DATABASE_URL, echo=True, pool_size=5, max_overflow=20)
 engine = create_engine(LIVE_DATABASE_URL, echo=True, pool_size=5, max_overflow=20)
