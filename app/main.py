@@ -1,3 +1,5 @@
+import os
+import uvicorn
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from app.api.auth_router import router as auth_router
@@ -30,3 +32,7 @@ app.include_router(streak_router)
 app.include_router(meal_router)
 app.include_router(recipe_router)
 app.include_router(info_router)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
