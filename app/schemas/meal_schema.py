@@ -11,6 +11,9 @@ class RecipeOut(BaseModel):
     recommendations: str
     ingredients: List[str]
     instructions: List[str]
+    carbohydrate_content: float
+    protein_content: float
+    overall_Score: float 
 
 class MealOut(BaseModel):
     id: int
@@ -39,6 +42,9 @@ class Recipe(BaseModel):
     recommendations: str
     ingredients: List[str]
     instructions: List[str]
+    carbohydrate_content: float
+    protein_content: float
+    overall_Score: float 
 
 class MealCreate(BaseModel):
     name: Optional[str]

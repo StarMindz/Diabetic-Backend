@@ -43,7 +43,7 @@ class Recipe(Timestamp, Base):
     __tablename__ = 'recipes'
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False)
+    name = Column(String, index=True, nullable=False, default="string")
     image = Column(String, nullable=True)
     glycemic_index = Column(Integer, nullable=False)
     calorie_level = Column(Integer, nullable=False)
@@ -51,6 +51,9 @@ class Recipe(Timestamp, Base):
     recommendations = Column(Text, nullable=True)
     instructions = Column(JSON, nullable=False) 
     ingredients = Column(JSON, nullable=False)
+    carbohydrate_content = Column(Float, nullable=False, default=0.0) 
+    protein_content = Column(Float, nullable=False, default=0.0)
+    overall_Score  = Column(Float, nullable=False, default=0.0)
     
     meals = relationship("Meal", back_populates="recipe")
 
