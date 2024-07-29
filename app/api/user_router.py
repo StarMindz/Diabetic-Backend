@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import EmailStr
 from app.models.user_model import User as UserModel, UserProfile
 from app.schemas.user_schema import UserProfileUpdate
 from app.database import get_db
+from app.security import get_user
 
 router = APIRouter(tags=["Users"])
 
@@ -25,9 +27,8 @@ def read_user(email: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@router.put("/users/{email}/profile")
-def update_user_profile(email: str, profile_data: UserProfileUpdate, db: Session = Depends(get_db)):
-    user = db.query(UserModel).filter(UserModel.email == email).first()
+@router.put("/users/profile")
+def update_user_profile(profile_data: UserProfileUpdate, db: Session = Depends(get_db), user:dict = Depends(get_user)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

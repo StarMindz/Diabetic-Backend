@@ -5,6 +5,7 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.models.user_model import User as UserModel
+from app.database import get_db
 
 # Constants
 SECRET_KEY = "51e10bb3aaad8bea49197e824a9d77339da6a38542fda8460f40d8c0ba5d78d5"  # Use a strong, secret value for JWT encoding/decoding
@@ -73,7 +74,7 @@ def authenticate_user(db: Session, email: str, password: str):
         return False
     return user
 
-def get_user(db: Session, token: str):
+def get_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     """Extract the current user from the JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

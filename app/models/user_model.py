@@ -2,6 +2,9 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from app.config import Base
 from .mixins import Timestamp
+from app.models.meal_model import Meal, MealPlan
+from app.models.streak_model import Streak
+from app.models.scan_model import ScanHistory
 
 class User(Timestamp, Base):
     __tablename__ = "users"
@@ -13,6 +16,12 @@ class User(Timestamp, Base):
     is_active = Column(Boolean, default=True)
     profile = relationship("UserProfile", back_populates="user", uselist=False)
     streak = relationship("Streak", back_populates="user", uselist=False)
+    meal_plans = relationship("MealPlan", back_populates="user")
+    scan_history = relationship("ScanHistory", back_populates="user")
+
+    def create_meal_plan(self, date):
+        meal_plan = MealPlan(user_id=self.id, date=date)
+        return meal_plan
 
 class UserProfile(Timestamp, Base):
     __tablename__ = "user_profiles"

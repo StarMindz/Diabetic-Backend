@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import  OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
-from app.security import authenticate_user, create_access_token, get_user, get_password_hash, oauth2_scheme
+from app.security import authenticate_user, create_access_token, get_user, get_password_hash
 from app.models.user_model import User as UserModel, UserProfile
 from app.models.streak_model import Streak
 from app.database import get_db
 from app.schemas.user_schema import SignupUser
+from app.schemas.user_schema import UserProfileResponse
 
 router = APIRouter(tags=["Authentication"])
 
@@ -48,9 +49,8 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Assuming there's a need for getting the current user
-@router.get("/users/me")
-async def read_users_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    user = get_user(db, token)
+@router.get("/users/me", response_model = UserProfileResponse)
+async def read_users_me(user:dict = Depends(get_user), db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user.profile
