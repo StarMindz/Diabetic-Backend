@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.meal_model import Meal, MealPlan, Recipe
-from app.schemas.meal_schema import MealCreate, MealOut, MealPlanOut
+from app.schemas.meal_schema import MealCreate, MealOut, MealPlanOut, DailyMeals
 from app.schemas.meal_schema import Recipe as RecipeInput
 from app.models.user_model import User
 from app.security import get_user
@@ -123,3 +123,73 @@ def get_meal_plan(date: datetime.date, db: Session = Depends(get_db), user:dict 
         raise HTTPException(status_code=404, detail="Meal plan not found")
     return meal_plan
 
+@router.post("/update_all_meals/{date}")
+def update_all_meals(input: DailyMeals, date:datetime.date = datetime.date.today(), db: Session = Depends(get_db), user: dict = Depends(get_user)):
+    if (date < datetime.date.today()):
+       raise HTTPException(status_code=404, detail="You can't edit or create meal plans for past dates") 
+    meal_plan = get_or_create_meal_plan(db, user.id, date)
+    existing_meal_ids = []
+
+    # Add new meals
+    for meal_type, meals in input.dict().items():
+        for meal in meals:
+            existing_meal = db.query(Meal).filter(Meal.id == meal["id"], Meal.meal_plan_id == meal_plan.id).first()
+            if existing_meal:
+                existing_meal_ids.append(existing_meal.id)
+            else:
+                new_meal = Meal(
+                    name=meal["name"],
+                    meal_type=meal_type,
+                    image = meal["image"],
+                    meal_plan_id=meal_plan.id,
+                    recipe=meal["recipe"]
+                    )
+                if meal["recipe"]:
+                    new_meal.recipe = Recipe(**meal["recipe"])
+                db.add(new_meal)
+                db.commit()
+                db.refresh(new_meal)
+                existing_meal_ids.append(new_meal.id)
+                            
+            # Delete locally deleted meal from datatbase
+    all_meals = db.query(Meal).filter(Meal.meal_plan_id == meal_plan.id).all()
+    for meal in all_meals:
+        if meal.id not in existing_meal_ids:
+            db.delete(meal)
+
+    delete_meal_plan_if_empty(db, meal_plan.id)
+
+    db.commit()
+    return {"message": "Meal plans updated successfully"}
+
+@router.get("/get_all_meals/{date}")
+def get_all_meals(date:datetime.date, db: Session = Depends(get_db), user: dict = Depends(get_user)):
+    meal_plan = db.query(MealPlan).filter(MealPlan.user_id == user.id, MealPlan.date == date).first()
+    if meal_plan :
+        meals_dict = {}
+        daily_meals = {
+            "breakfast": [],
+            "lunch": [],
+            "dinner": [],
+            "snack": []
+        }
+
+        meals = db.query(Meal).filter(Meal.meal_plan_id == meal_plan.id).all()
+        for meal in meals:
+            meal_out = {
+            "id": meal.id,
+            "name": meal.name,
+            "image": meal.image,
+            "recipe": meal.recipe
+            }
+            if meal.meal_type == "breakfast":
+                daily_meals["breakfast"].append(meal_out)
+            elif meal.meal_type == "lunch":
+                daily_meals["lunch"].append(meal_out)
+            elif meal.meal_type == "dinner":
+                daily_meals["dinner"].append(meal_out)
+            elif meal.meal_type == "snack":
+                daily_meals["snack"].append(meal_out)
+    else:
+        raise HTTPException(status_code=404, detail="No Meal plan scheduled for today")
+    return daily_meals

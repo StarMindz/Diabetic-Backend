@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 import datetime
 
 class RecipeOut(BaseModel):
@@ -13,7 +13,7 @@ class RecipeOut(BaseModel):
     instructions: List[str]
     carbohydrate_content: float
     protein_content: float
-    overall_Score: float 
+    overall_score: float 
 
 class MealOut(BaseModel):
     id: int
@@ -44,9 +44,16 @@ class Recipe(BaseModel):
     instructions: List[str]
     carbohydrate_content: float
     protein_content: float
-    overall_Score: float 
+    overall_score: float 
 
 class MealCreate(BaseModel):
+    id: int
     name: Optional[str]
     image: Optional[str]
     recipe: Optional[Recipe]
+
+class DailyMeals(BaseModel):
+    breakfast: List[MealCreate]
+    lunch: List[MealCreate]
+    dinner: List[MealCreate]
+    snack: List[MealCreate]

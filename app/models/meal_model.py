@@ -53,7 +53,7 @@ class Recipe(Timestamp, Base):
     ingredients = Column(JSON, nullable=False)
     carbohydrate_content = Column(Float, nullable=False, default=0.0) 
     protein_content = Column(Float, nullable=False, default=0.0)
-    overall_Score  = Column(Float, nullable=False, default=0.0)
+    overall_score  = Column(Float, nullable=False, default=0.0)
     
     meals = relationship("Meal", back_populates="recipe")
 
