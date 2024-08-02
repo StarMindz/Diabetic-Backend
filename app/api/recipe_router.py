@@ -55,21 +55,21 @@ def get_valid_recipes(db: Session = Depends(get_db), user:dict = Depends(get_use
 @router.post("/like_logic/{recipe_id}")
 async def like_or_unlike_recipe(recipe_id: int, db: Session = Depends(get_db), user: dict = Depends(get_user)):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
-    likers_id = recipe.liked_by if recipe.liked_by else []
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    if user.id in likers_id:
-        likers_id = [item for item in likers_id if item != user.id]
-        recipe.liked_by = likers_id
+    likers_id = recipe.liked_by if recipe.liked_by else []
+
+    if user['id'] in likers_id:
+        likers_id.remove(user['id'])
         recipe.total_likes -= 1
         message = "Unliked successfully"
     else:
-        likers_id.append(user.id)
-        recipe.liked_by = likers_id
+        likers_id.append(user['id'])
         recipe.total_likes += 1
         message = "Liked successfully"
+
+    recipe.liked_by = likers_id
     db.commit()
     db.refresh(recipe)
     return {"recipe_id": recipe.id, "total_likes": recipe.total_likes, "message": message, "recipe": recipe}
-
