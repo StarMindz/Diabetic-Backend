@@ -58,7 +58,7 @@ def like_or_unlike_recipe(recipe_id: int, db: Session = Depends(get_db), user: d
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    likers_id = recipe.liked_by if recipe.liked_by else []
+    likers_id = [item for item in recipe.liked_by] if recipe.liked_by else []
 
     if user.id in likers_id:
         likers_id.remove(user.id)
