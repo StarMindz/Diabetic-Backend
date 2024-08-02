@@ -166,7 +166,6 @@ def update_all_meals(input: DailyMeals, date:datetime.date = datetime.date.today
 def get_all_meals(date:datetime.date, db: Session = Depends(get_db), user: dict = Depends(get_user)):
     meal_plan = db.query(MealPlan).filter(MealPlan.user_id == user.id, MealPlan.date == date).first()
     if meal_plan :
-        meals_dict = {}
         daily_meals = {
             "breakfast": [],
             "lunch": [],

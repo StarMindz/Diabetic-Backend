@@ -13,7 +13,9 @@ class RecipeOut(BaseModel):
     instructions: List[str]
     carbohydrate_content: float
     protein_content: float
-    overall_score: float 
+    overall_score: float
+    total_likes: float
+    liked_by: List[str] 
 
 class MealOut(BaseModel):
     id: int
@@ -44,7 +46,9 @@ class Recipe(BaseModel):
     instructions: List[str]
     carbohydrate_content: float
     protein_content: float
-    overall_score: float 
+    overall_score: float
+    total_likes: float
+    liked_by: List[str] 
 
 class MealCreate(BaseModel):
     id: int
