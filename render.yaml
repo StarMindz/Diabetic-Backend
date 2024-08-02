@@ -5,5 +5,8 @@ services:
     runtime: python
     plan: free
     autoDeploy: false
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      alembic revision --autogenerate -m "Make neccessary migrations"
+      alembic upgrade head  # Run Alembic migrations during the build phase
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
