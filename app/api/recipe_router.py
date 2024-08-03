@@ -13,27 +13,25 @@ router = APIRouter(
     tags=["Recipes"]
 )
 
-# @router.post("/add_recipe")
-# def create_recipe(recipe: RecipeInput, db: Session = Depends(get_db)):
-#     db_recipe = Recipe(
-#         name=recipe.name,
-#         image=recipe.image,
-#         glycemic_index=recipe.glycemic_index,
-#         calorie_level=recipe.calorie_level,
-#         diabetic_friendly=recipe.diabetic_friendly,
-#         recommendations=recipe.recommendations,
-#         ingredients=[ingredient for ingredient in recipe.ingredients],
-#         instructions=[instruction for instruction in recipe.instructions],
-#         carbohydrate_content = recipe.carbohydrate_content,
-#         protein_content = recipe.protein_content,
-#         overall_score  = recipe.overall_score,
-#         total_likes = recipe.total_likes,
-#         liked_by = recipe.liked_by
-#     )
-#     db.add(db_recipe)
-#     db.commit()
-#     db.refresh(db_recipe)
-#     return {"message": "Recipe added successfully", "recipe": db_recipe}
+@router.post("/add_recipe")
+def create_recipe(recipe: RecipeInput, db: Session = Depends(get_db)):
+    db_recipe = Recipe(
+        name=recipe.name,
+        image=recipe.image,
+        glycemic_index=recipe.glycemic_index,
+        calorie_level=recipe.calorie_level,
+        diabetic_friendly=recipe.diabetic_friendly,
+        recommendations=recipe.recommendations,
+        ingredients=[ingredient for ingredient in recipe.ingredients],
+        instructions=[instruction for instruction in recipe.instructions],
+        carbohydrate_content = recipe.carbohydrate_content,
+        protein_content = recipe.protein_content,
+        overall_score  = recipe.overall_score,
+    )
+    db.add(db_recipe)
+    db.commit()
+    db.refresh(db_recipe)
+    return {"message": "Recipe added successfully", "recipe": db_recipe}
 
 @router.get("/get_recipes")
 def get_valid_recipes(db: Session = Depends(get_db), user:dict = Depends(get_user)):
