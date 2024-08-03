@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.meal_model import Meal, MealPlan, Recipe
 from app.schemas.meal_schema import MealCreate, MealOut, MealPlanOut
-from app.schemas.meal_schema import Recipe as RecipeInput
+from app.schemas.meal_schema import RecipeInput
 from app.models.user_model import User
 from app.security import get_user
 from app.database import get_db

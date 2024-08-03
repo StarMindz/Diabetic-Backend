@@ -50,6 +50,19 @@ class Recipe(BaseModel):
     total_likes: float
     liked_by: List[str] 
 
+class RecipeInput(BaseModel):
+    name: str
+    image: str
+    glycemic_index: int
+    calorie_level: int
+    diabetic_friendly: bool
+    recommendations: str
+    ingredients: List[str]
+    instructions: List[str]
+    carbohydrate_content: float
+    protein_content: float
+    overall_score: float
+
 class MealCreate(BaseModel):
     id: int
     name: Optional[str]
