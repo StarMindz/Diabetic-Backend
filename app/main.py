@@ -8,6 +8,7 @@ from app.api.streak_router import router as streak_router
 from app.api.meal_router import router as meal_router
 from app.api.recipe_router import router as recipe_router
 from app.api.info_router import router as info_router
+from app.api.scan_router import router as scan_router
 
 app = FastAPI()
 
@@ -32,6 +33,7 @@ app.include_router(streak_router)
 app.include_router(meal_router)
 app.include_router(recipe_router)
 app.include_router(info_router)
+app.include_router(scan_router)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
