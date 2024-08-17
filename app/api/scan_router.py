@@ -1,5 +1,11 @@
 from app.utilities.scan import upload_to_gemini, extract_json, generation_config_scan, possible_food_labels
+from app.schemas.scan_schema import ScanHistorySchema
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.security import  get_user
+from app.models.scan_model import ScanHistory
 from PIL import Image
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -26,7 +32,7 @@ food_model = genai.GenerativeModel(
 
 
 @router.post("/process-image")
-async def process_image(file: UploadFile = File(...)):
+async def process_image(file: UploadFile = File(...), db: Session = Depends(get_db), user:dict = Depends(get_user)):
     try:
         mime_type = file.content_type
         file_extension = mime_type.split('/')[-1]
@@ -69,11 +75,29 @@ async def process_image(file: UploadFile = File(...)):
             response = chat_session.send_message(prompt)
 
         clean_json_string = str(response.text).strip('`')
+        result = extract_json(clean_json_string)
+        scan_history = ScanHistory(user_id=user.id, scan_result=result)
+        db.add(scan_history)
+        db.commit()
+        db.refresh(scan_history)
 
         # Now, convert the cleaned string to a JSON object
-        return extract_json(clean_json_string)
+        return result
 
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/scan-history", response_model=List[ScanHistorySchema])
+async def get_scan_history(db: Session = Depends(get_db), user:dict = Depends(get_user)):
+    return db.query(ScanHistory).filter(ScanHistory.user_id == user.id).all()
+
+@router.delete("/scan-history/{scan_id}")
+async def delete_scan_history(scan_id: int, db: Session = Depends(get_db), user:dict = Depends(get_user)):
+    scan = db.query(ScanHistory).filter(ScanHistory.id == scan_id, ScanHistory.user_id == user.id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan history not found")
+    db.delete(scan)
+    db.commit()
+    return {"detail": "Scan history deleted successfully"}

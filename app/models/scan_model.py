@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from app.config import Base
 from .mixins import Timestamp
@@ -9,7 +9,7 @@ class ScanHistory(Timestamp, Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    meal_id = Column(Integer, ForeignKey('meals.id'))
+    scan_result = Column(JSON, nullable=False)
 
     user = relationship("User", back_populates="scan_history")
-    meal = relationship("Meal", back_populates="scan_histories")
+

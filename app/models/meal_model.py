@@ -33,7 +33,7 @@ class Meal(Timestamp,Base):
 
     meal_plan = relationship("MealPlan", back_populates="meals")
     recipe = relationship("Recipe")
-    scan_histories = relationship("ScanHistory", back_populates="meal")
+    # scan_histories = relationship("ScanHistory", back_populates="meal")
 
     def change_recipe(self, new_recipe):
         self.recipe_id = new_recipe.id
