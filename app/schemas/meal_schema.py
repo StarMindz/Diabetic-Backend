@@ -14,6 +14,11 @@ class RecipeOut(BaseModel):
     carbohydrate_content: float
     protein_content: float
     overall_score: float
+    fiber_content: float
+    net_carb: float
+    fat: float
+    portion_size_recommendations: float
+    cholesterol: float
     total_likes: float
     liked_by: List[str] 
 
@@ -47,6 +52,11 @@ class Recipe(BaseModel):
     carbohydrate_content: float
     protein_content: float
     overall_score: float
+    fiber_content: float
+    net_carb: float
+    fat: float
+    portion_size_recommendations: float
+    cholesterol: float
     total_likes: float
     liked_by: List[str] 
 
@@ -62,6 +72,11 @@ class RecipeInput(BaseModel):
     carbohydrate_content: float
     protein_content: float
     overall_score: float
+    fiber_content: float
+    net_carb: float
+    fat: float
+    portion_size_recommendations: float
+    cholesterol: float
 
 class MealCreate(BaseModel):
     id: int
