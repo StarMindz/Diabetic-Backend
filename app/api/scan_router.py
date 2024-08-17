@@ -10,6 +10,8 @@ from PIL import Image
 from dotenv import load_dotenv
 import google.generativeai as genai
 from transformers import CLIPProcessor, CLIPModel
+import boto3
+from botocore.exceptions import NoCredentialsError
 import torch
 import os
 import io
@@ -19,9 +21,25 @@ router = APIRouter(tags=["Scan"])
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
+# Configure s3 bucket
+BUCKET_NAME = os.environ["BUCKET_NAME"]
+ACCESS_KEY = os.environ["ACCESS_KEY"]
+SECRET_ACCESS_KEY = os.environ["SECRET_ACCESS_KEY"]
+REGION = os.environ["REGION"]
+S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
+
 #Load the CLIP model and processor from Huggling Face
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+
+# Initialize the S3 client
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=ACCESS_KEY,
+    aws_secret_access_key=SECRET_ACCESS_KEY,
+    region_name=REGION
+)
+S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
 
 
 food_model = genai.GenerativeModel(
@@ -30,6 +48,16 @@ food_model = genai.GenerativeModel(
   system_instruction="I need your response in the form of a json that looks like this. Make sure to check all needed resource and go on the internet if neccessary to get the accurate information for the given food and be very detailed in your responses. I don't want any value to be null, the overall_score should be in percentage, the portion_size_recommendations should be in gram, and others should take their standard units. \n\nYour response should be a JSON in this form:\n\n{\n  \"name\": \"Okro Soup\",\n  \"glycemic_index\": 18,\n  \"calorie_level\": 150,\n  \"diabetic_friendly\": true,\n  \"recommendations\": \"This meal is suitable for diabetic patients. It contains low glycemic index and is rich in fibers.\",\n  \"ingredients\": [\n    \"800g fresh Okro, chopped\",\n    \"200g beef, washed\",\n    \"800g assorted beef & dried cod, washed and cut into small pieces\",\n    \"Smoked fish\",\n    \"2 seasoning cubes (Knorr beef cubes)\",\n    \"2 tbsp locust bean (iru)\",\n    \"Cayenne pepper (use according to your preference)\",\n    \"2-3 tbsp palm oil (optional)\",\n    \"Salt\",\n    \"A tiny bit of Potash (Kaun)\",\n    \"1 small onion\",\n    \"1 tbsp ground crayfish\",\n    \"⅓ cup Ukazi leaves (optional)\",\n    \"Ginger and garlic (optional)\",\n    \"1.5 to 2 cups water/stock\"\n  ],\n  \"instructions\": [\n    \"Chop okra and set aside.\",\n    \"Place a pan on medium heat and add beef, assorted beef, dried cod, salt, seasoning, onion, ginger, garlic, and a little water. Bring to boil until tender.\",\n    \"Separate the stock from the meat and sieve to achieve a clean stock.\",\n    \"Place a clean pan on medium heat, add the stock, beef, assorted beef, and dried fish, and bring to boil for about 3-5 minutes.\",\n    \"Add potash, then the chopped okra. Stir till all is well combined and cook for another minute.\",\n    \"Add crayfish and cayenne pepper. Stir till well combined, add palm oil, stir and cook for about 2 minutes.\",\n    \"Add seasoning and salt, then add ukazi leaves (if using) and smoked mackerel. Cook for another 2-3 minutes.\",\n    \"Serve with your preferred swallow.\"\n  ],\n  \"carbohydrate_content\": 5,\n  \"protein_content\": 20,\n  \"overall_score\": 90,\n  \"fiber_content\": 10\n  \"net_carb\": 15,\n  \"fat\": 10,\n  \"portion_size_recommendations\": 200,\n  \"cholesterol\": 10\n}\n\n",
 )
 
+def upload_to_s3(file_path: str, bucket_name: str, object_name: str):
+    try:
+        s3_client.upload_file(file_path, bucket_name, object_name)
+        return f"{S3_BASE_URL}{object_name}"
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
+    except NoCredentialsError:
+        raise HTTPException(status_code=403, detail="Credentials not available")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/process-image")
 async def process_image(file: UploadFile = File(...), db: Session = Depends(get_db), user:dict = Depends(get_user)):
@@ -76,6 +104,12 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
 
         clean_json_string = str(response.text).strip('`')
         result = extract_json(clean_json_string)
+
+        # Upload image to S3 in the 'Scan images/' folder
+        s3_key = f"Scan images/{file.filename}"
+        s3_url = upload_to_s3(file_path, BUCKET_NAME, s3_key)
+        result['image'] = s3_url
+
         scan_history = ScanHistory(user_id=user.id, scan_result=result)
         db.add(scan_history)
         db.commit()
