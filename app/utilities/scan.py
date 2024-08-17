@@ -92,3 +92,28 @@ possible_food_labels = [
     "Oha Soup", "Beans porridge and plantain", "Bitterleaf Soup (Ofe Onugbu)", "Ofe Nsala (White soup)", "Suya",
    "Yam", "Okra soup","Pepper Soup", "Eba", "Moin Moin (Bean Pudding)"
 ]
+
+food_classes = ['Afang Soup',
+ 'Amala and ewedu soup',
+ 'Banga Soup',
+ 'Beans Porridge and Plantain',
+ 'Bitterleaf Soup (Ofe Onugbu)',
+ 'Eba',
+ 'Edikang Ikong Soup',
+ 'Efo Riro (Stewed Spinach)',
+ 'Egusi Soup',
+ 'Fried Plantain',
+ 'Jellof Rice',
+ 'Miyan Taushe',
+ 'Moi Moi (Bean Pudding)',
+ 'Nkwobi',
+ 'Ofada Rice and Sauce',
+ 'Ofe Nsala (White Soup)',
+ 'Ogbono Soup',
+ 'Okra Soup',
+ 'Pepper Soup',
+ 'Spagetti',
+ 'Suya',
+ 'Tuwo',
+ 'Waina (Masa)',
+ 'Yam Porridge']

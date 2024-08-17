@@ -1,4 +1,4 @@
-from app.utilities.scan import upload_to_gemini, extract_json, generation_config_scan, possible_food_labels
+from app.utilities.scan import upload_to_gemini, extract_json, generation_config_scan, possible_food_labels, food_classes
 from datetime import datetime
 from app.schemas.scan_schema import ScanHistorySchema
 from typing import List
@@ -10,7 +10,10 @@ from app.models.scan_model import ScanHistory
 from PIL import Image
 from dotenv import load_dotenv
 import google.generativeai as genai
-from transformers import CLIPProcessor, CLIPModel
+# from transformers import CLIPProcessor, CLIPModel
+import torch
+import open_clip
+import torch.nn.functional as F
 import boto3
 from botocore.exceptions import NoCredentialsError
 import torch
@@ -29,9 +32,20 @@ SECRET_ACCESS_KEY = os.environ["SECRET_ACCESS_KEY"]
 REGION = os.environ["REGION"]
 S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
 
-#Load the CLIP model and processor from Huggling Face
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+# #Load the CLIP model and processor from Huggling Face
+# clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+# clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+
+# Load the pretrained CLIP model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained=False)
+
+# Load the fine-tuned weights
+model.load_state_dict(torch.load('clip_ai_models/clip_finetuned3.pth', map_location=device)) 
+
+# Move the model to the correct device and enter eval mode
+model.to(device)
+model.eval() 
 
 # Initialize the S3 client
 s3_client = boto3.client(
@@ -77,18 +91,42 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         file_path = f"temp_image.{file_extension}"
         image.save(file_path)
 
-        labels = [f"A photo of {label} nigerian food" for label in possible_food_labels]
+        input_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
+        input_tensor = input_tensor.to(device)
 
-        inputs = clip_processor(text=labels, images=image, return_tensors="pt", padding=True)
-        outputs = clip_model(**inputs)
-        logits_per_image = outputs.logits_per_image # this is the image-text similarity score
-        probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilities
+        # labels = [f"A photo of {label} nigerian food" for label in possible_food_labels]
+
+        # inputs = clip_processor(text=labels, images=image, return_tensors="pt", padding=True)
+        # outputs = clip_model(**inputs)
+        # logits_per_image = outputs.logits_per_image # this is the image-text similarity score
+        # probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilities
+
+        with torch.no_grad():
+            outputs = model(input_tensor)
+    
+            # If outputs is a tuple, extract the logits (usually the first element)
+            if isinstance(outputs, tuple):
+                outputs = outputs[0]
+    
+            # Apply softmax to get probabilities
+            probabilities = F.softmax(outputs, dim=1)
+    
+            # Get the predicted class index and its probability
+            _, predicted = torch.max(probabilities, 1)
+            predicted_class_index = predicted.item()
+            predicted_class_probability = probabilities[0][predicted_class_index].item()
+    
+        # Print the predicted class index and the corresponding probability
+        print(f'Predicted class index: {predicted_class_index}')
+        print(f'Probability assigned to predicted class: {predicted_class_probability*100 }')
+        print(f'Predicted food: {food_classes[predicted_class_index]}')
 
 
-        best_label_idx = torch.argmax(probs, dim=1).item()
-        best_label = possible_food_labels[best_label_idx]
+        # best_label_idx = torch.argmax(probs, dim=1).item()
+        # best_label = possible_food_labels[best_label_idx]
+        best_label = food_classes[predicted_class_index]
 
-        if probs[0, best_label_idx] > 0.8:
+        if (predicted_class_probability*100) > 0.45:
             prompt = f"You are to serve as the nutritionist for an app that help diabetic patients get all the needed nutritional information about Nigerian local meals to make better diet decision and determine if the meal is safe for them or not. Get the accurate informations for {best_label}. Be very detailed in your responses"
             response = food_model.generate_content(prompt)
         else:
