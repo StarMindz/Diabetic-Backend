@@ -33,7 +33,7 @@ class Meal(Timestamp,Base):
 
     meal_plan = relationship("MealPlan", back_populates="meals")
     recipe = relationship("Recipe")
-    scan_histories = relationship("ScanHistory", back_populates="meal")
+    # scan_histories = relationship("ScanHistory", back_populates="meal")
 
     def change_recipe(self, new_recipe):
         self.recipe_id = new_recipe.id
@@ -54,6 +54,11 @@ class Recipe(Timestamp, Base):
     carbohydrate_content = Column(Float, nullable=False, default=0.0) 
     protein_content = Column(Float, nullable=False, default=0.0)
     overall_score  = Column(Float, nullable=False, default=0.0)
+    fiber_content = Column(Float, nullable=False, default=0)
+    net_carb = Column(Float, nullable=False, default=0)
+    fat = Column(Float, nullable=False, default=0)
+    portion_size_recommendations = Column(Float, nullable=False, default=0)
+    cholesterol = Column(Float, nullable=False, default=0)
     total_likes = Column(Integer, nullable=False, default=0.0)
     liked_by = Column(JSON, nullable=False, default=list)
     

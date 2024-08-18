@@ -32,7 +32,9 @@ def create_access_token(data: UserModel) -> str:
     """Create a JWT token that stores user data and has an expiry."""
     userClaims = {
         "email": data.email,
-        "user_id": data.id
+        "user_id": data.id,
+        "username": data.full_name,
+        "email": data.email
     }
     expire = datetime.utcnow() + (timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     userClaims.update({"exp": expire})
