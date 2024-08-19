@@ -14,35 +14,6 @@ from app.api.recommend_router import router as recommend_router
 
 app = FastAPI()
 
-MODEL_URL = "https://drive.google.com/uc?id=1cVWEMdG7ucHPQrS5vVbZQGep3J9Gm22L&export=download"
-MODEL_PATH = "clip_ai_models/clip_finetuned3.pth"
-
-def download_file(url, dest_path):
-    """Download a file from a URL to a local path."""
-    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-    
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        with open(dest_path, 'wb') as f:
-            for chunk in response.iter_content(1024):
-                f.write(chunk)
-        print(f"Downloaded {dest_path}.")
-    else:
-        raise Exception(f"Failed to download {url}. Status code: {response.status_code}")
-
-def ensure_model_downloaded():
-    """Ensure that the model file is downloaded before starting the app."""
-    if not os.path.exists(MODEL_PATH):
-        print(f"{MODEL_PATH} not found. Downloading...")
-        download_file(MODEL_URL, MODEL_PATH)
-    else:
-        print(f"{MODEL_PATH} already exists.")
-
-# Run the model download check when the app starts
-@app.on_event("startup")
-async def startup_event():
-    ensure_model_downloaded()
-
 # Custom exception handler for HTTPException
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
