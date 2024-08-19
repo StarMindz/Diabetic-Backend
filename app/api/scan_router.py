@@ -41,7 +41,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained=False)
 
 # Load the fine-tuned weights
-model.load_state_dict(torch.load('clip_finetuned_model/clip_finetuned3.pth', map_location=device)) 
+model.load_state_dict(torch.load('clip_models/clip_finetuned3.pth', map_location=device)) 
 
 
 # Move the model to the correct device and enter eval mode

@@ -8,6 +8,16 @@ ENV PYTHONUNBUFFERED=1
 # Set the working directory in the container
 WORKDIR /app
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3-dev \
+    postgresql \
+    postgresql-contrib \
+    python3-psycopg2 \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the dependencies file to the container
 COPY requirements.txt /app/
 
@@ -22,4 +32,5 @@ COPY . /app/
 EXPOSE 8000
 
 # Run the FastAPI application using Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", ]
+CMD ["sudo apt install python3-dev postgresql postgresql-contrib python3-psycopg2 libpq-dev"]

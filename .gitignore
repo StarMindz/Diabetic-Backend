@@ -13,7 +13,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-clip_finetuned_model/
 dist/
 downloads/
 eggs/
