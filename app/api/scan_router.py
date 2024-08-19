@@ -42,7 +42,11 @@ model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrai
 
 # Load the fine-tuned weights
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 model.load_state_dict(torch.load('clip_finetuned_model\clip_finetuned3.pth', map_location=device)) 
+=======
+model.load_state_dict(torch.load('clip_finetuned_model/clip_finetuned3.pth', map_location=device)) 
+>>>>>>> Stashed changes
 =======
 model.load_state_dict(torch.load('clip_finetuned_model/clip_finetuned3.pth', map_location=device)) 
 >>>>>>> Stashed changes
