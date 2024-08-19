@@ -15,7 +15,7 @@ import torch
 import open_clip
 import torch.nn.functional as F
 import boto3
-from botocore.exceptions import NoCredentialsError
+from botocore.exceptions import NoCredentialsError, ClientError
 import torch
 import os
 import io
@@ -41,7 +41,11 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained=False)
 
 # Load the fine-tuned weights
+<<<<<<< Updated upstream
 model.load_state_dict(torch.load('clip_finetuned_model\clip_finetuned3.pth', map_location=device)) 
+=======
+model.load_state_dict(torch.load('clip_finetuned_model/clip_finetuned3.pth', map_location=device)) 
+>>>>>>> Stashed changes
 
 # Move the model to the correct device and enter eval mode
 model.to(device)
@@ -81,6 +85,15 @@ def upload_to_s3(file_path: str, bucket_name: str, object_name: str):
         raise HTTPException(status_code=403, detail="Credentials not available")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+def delete_image_from_s3(bucket_name: str, object_name: str):
+    try:
+        s3_client.delete_object(Bucket = bucket_name, Key = object_name)
+        print(f"Object {object_name} deleted successfully")
+    except NoCredentialsError:
+        print("S3 credentials not available")
+    except ClientError as e:
+        print(f"Error deleting object: {e}")
 
 @router.post("/process-image")
 async def process_image(file: UploadFile = File(...), db: Session = Depends(get_db), user:dict = Depends(get_user)):
@@ -182,4 +195,9 @@ async def delete_scan_history(scan_id: int, db: Session = Depends(get_db), user:
         raise HTTPException(status_code=404, detail="Scan history not found")
     db.delete(scan)
     db.commit()
-    return {"detail": "Scan history deleted successfully"}
+    # Delete image form s3 bucket
+    image = scan.scan_result["image"]
+    s3_key = f"Scan images/{image}"
+    delete_image_from_s3(bucket_name=BUCKET_NAME, object_name=s3_key)
+   
+    return {"detail": f"Scan history deleted successfully {image}"}

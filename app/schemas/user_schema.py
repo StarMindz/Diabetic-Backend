@@ -18,6 +18,7 @@ class SignupUser(BaseModel):
     password: str
 
 class UserProfileResponse(BaseModel):
+    image: Any
     height: Any
     weight: Any
     age: Any

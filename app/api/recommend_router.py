@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.security import get_user
 from app.models.user_model import UserProfile, MealPlan, Meal
+from app.models.meal_model import Recipe
 from fastapi import APIRouter, Depends, HTTPException
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -18,7 +19,7 @@ genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel(
   model_name="gemini-1.5-pro",
   generation_config=generation_config_recommendation,
-  system_instruction="I need your response in the form of a json that looks like this\n{\n  \"breakfast\": [\n    {\n      \"name\": \"Jellof Rice and Chicken\",\n      \"image\": \"string\",\n      \"recipe\": {\n        \"name\": \"string\",\n        \"glycemic_index\": 90,\n        \"diabetic_friendly\": false,\n        \"instructions\": [\n          \"string\"\n        ],\n        \"carbohydrate_content\": 0,\n        \"protein_content\": 0,\n        \"image\": \"https://example.com/default_image.jpg\",\n        \"calorie_level\": 0,\n        \"recommendations\": \"string\",\n        \"ingredients\": [\n          \"string\"\n        ],\n      }\n    },\n    {\n      \"name\": \"Jellof Rice and Chicken\",\n      \"image\": \"string\",\n      \"recipe\": {\n        \"name\": \"string\",\n        \"glycemic_index\": 90,\n        \"diabetic_friendly\": false,\n        \"instructions\": [\n          \"string\"\n        ],\n        \"carbohydrate_content\": 0,\n        \"protein_content\": 0,\n        \"overall_score\": 0,\n        \"image\": \"https://example.com/default_image.jpg\",\n        \"calorie_level\": 0,\n        \"recommendations\": \"string\",\n        \"ingredients\": [\n          \"string\"\n        ],\n      }\n    }\n  ],\n  \"lunch\": [\n    {\n      \"name\": \"Yam and Egg\",\n      \"image\": \"string\",\n      \"recipe\": {\n        \"name\": \"string\",\n        \"glycemic_index\": 0,\n        \"diabetic_friendly\": true,\n        \"instructions\": [\n          \"string\"\n        ],\n        \"carbohydrate_content\": 0,\n        \"protein_content\": 0,\n        \"overall_score\": 0,\n        \"image\": \"https://example.com/default_image.jpg\",\n        \"calorie_level\": 0,\n        \"recommendations\": \"string\",\n        \"ingredients\": [\n          \"string\"\n        ],\n      }\n    }\n  ],\n  \"dinner\": [\n    {\n      \"name\": \"Eba and Egusi Soup\",\n      \"image\": \"string\",\n      \"recipe\": {\n        \"name\": \"string\",\n        \"glycemic_index\": 0,\n        \"diabetic_friendly\": true,\n        \"instructions\": [\n          \"string\"\n        ],\n        \"carbohydrate_content\": 0,\n        \"protein_content\": 0,\n        \"overall_score\": 0,\n        \"image\": \"https://example.com/default_image.jpg\",\n        \"calorie_level\": 0,\n        \"recommendations\": \"string\",\n        \"ingredients\": [\n          \"string\"\n        ],\n      }\n    }\n  ],\n  \"snack\": [\n    {\n      \"name\": \"Meat pie\",\n      \"image\": \"string\",\n      \"recipe\": {\n        \"name\": \"string\",\n        \"glycemic_index\": 0,\n        \"diabetic_friendly\": true,\n        \"instructions\": [\n          \"string\"\n        ],\n        \"carbohydrate_content\": 0,\n        \"protein_content\": 0,\n        \"overall_score\": 0,\n        \"image\": \"https://example.com/default_image.jpg\",\n        \"calorie_level\": 0,\n        \"recommendations\": \"string\",\n        \"ingredients\": [\n          \"string\"\n        ],\n      }\n    }\n  ]\n}",
+  system_instruction="I need your response in the form of a json that looks like this, where meal_id is the is the index of the recommended meal in my list of possible meals\n{\n  \"breakfast\": [\n      meal_id\n  ],\n  \"lunch\": [\n      meal_id\n  ],\n  \"dinner\": [\n      meal_id\n  ],\n  \"snack\": [\n      meal_id\n  ]\n}\n\n",
 )
 
 def clean_json_string(text_response):
@@ -51,6 +52,22 @@ async def get_recommendations(db: Session = Depends(get_db), user: dict = Depend
         f"Medications: {user.profile.medication or 'None'}"
     )
 
+    valid_recipes = db.query(Recipe).filter(
+        Recipe.name != None,
+        Recipe.name != "string",
+        Recipe.image != "string",
+        Recipe.image != None,
+        Recipe.glycemic_index >= 0,
+        Recipe.calorie_level >= 0,
+        Recipe.diabetic_friendly!=None,
+        Recipe.recommendations!= "string",
+        Recipe.recommendations!= None,
+        Recipe.ingredients != None,
+        Recipe.instructions != None
+    ).all()
+
+    valid_recipes_names = [recipe.name for recipe in valid_recipes]
+
     # Collect past meals data
     past_meals = {}
     for idx, meal_plan in enumerate(past_meal_plans):
@@ -66,8 +83,8 @@ async def get_recommendations(db: Session = Depends(get_db), user: dict = Depend
     prompt = (
         f"Given the following user profile and past meal intake data, please recommend a balanced and nutritious one day meal plan containing "
         f"breakfast, lunch, dinner, and snacks. The recommendations should be suitable for managing {user.profile.diabetic_type} Diabetes, "
-        f"considering the user profile below.\n\nUser profile:\n{user_profile}\n\n"
-        f"Also Consider the Past meal intake data:\n"
+        f"Make sure to consider the user profile below.\n\nUser profile:\n{user_profile}\n\n"
+        f"Make sure to consider the Past meal intake data in your decision making:"
     )
 
     # Add past meals to the prompt
@@ -77,7 +94,7 @@ async def get_recommendations(db: Session = Depends(get_db), user: dict = Depend
             prompt += f"  {meal_type.capitalize()}: {meal_name}\n"
 
     prompt += (
-        "\nEnsure the meals are accessible in {user.profile.country}, and provide a good balance of macronutrients."
+        f"\nThe goal is to maintain optimal blood sugar levels and low Glycemic Load over time and prevent spikes. Don't repeat meals in same day. Provide a good balance of macronutrients and diversity. \n. ONLY PICK MEALS FROM THIS LIST OF POSSIBLE MEALS: {valid_recipes_names}."
     )
     
     chat_session = model.start_chat(
@@ -88,4 +105,35 @@ async def get_recommendations(db: Session = Depends(get_db), user: dict = Depend
     response = chat_session.send_message(prompt)
 
     # Now, convert the cleaned string to a JSON object
-    return json.loads(response.text)
+    result = json.loads(response.text)
+    result["breakfast"][0] = {
+        "id": 1,
+        "name": valid_recipes_names[int(result["breakfast"][0])],
+        "image": valid_recipes[int(result["breakfast"][0])].image,
+        "recipe": valid_recipes[int(result["breakfast"][0])]
+    }
+
+    result["lunch"][0] = {
+        "id": 2,
+        "name": valid_recipes_names[int(result["lunch"][0])],
+        "image": valid_recipes[int(result["lunch"][0])].image,
+        "recipe": valid_recipes[int(result["lunch"][0])]
+    }
+
+    result["dinner"][0] = {
+        "id": 3,
+        "name": valid_recipes_names[int(result["dinner"][0])],
+        "image": valid_recipes[int(result["dinner"][0])].image,
+        "recipe": valid_recipes[int(result["dinner"][0])]
+    }
+
+    result["snack"][0] = {
+        "id": 4,
+        "name": valid_recipes_names[int(result["snack"][0])],
+        "image": valid_recipes[int(result["snack"][0])].image,
+        "recipe": valid_recipes[int(result["snack"][0])]
+    }
+        
+
+    
+    return result

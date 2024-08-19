@@ -27,6 +27,7 @@ class UserProfile(Timestamp, Base):
     __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
+    image = Column(String, nullable=True)
     height = Column(Float, nullable=True)
     weight = Column(Float, nullable=True)
     age = Column(Integer, nullable=True)
