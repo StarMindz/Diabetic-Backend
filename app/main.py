@@ -1,4 +1,5 @@
 import os
+import requests
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
