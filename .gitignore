@@ -1,4 +1,6 @@
-
+.env
+*.env
+*.env*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -11,6 +13,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
+clip_finetuned_model/
 dist/
 downloads/
 eggs/
@@ -84,7 +87,9 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
+.env
 .venv
+env/
 venv/
 ENV/
 env.bak/
