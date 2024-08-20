@@ -11,6 +11,7 @@ from app.api.recipe_router import router as recipe_router
 from app.api.info_router import router as info_router
 from app.api.scan_router import router as scan_router
 from app.api.recommend_router import router as recommend_router
+from app.api.news_router import router as news_router
 
 app = FastAPI()
 
@@ -37,6 +38,7 @@ app.include_router(recipe_router)
 app.include_router(info_router)
 app.include_router(scan_router)
 app.include_router(recommend_router)
+app.include_router(news_router)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
