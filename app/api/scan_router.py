@@ -23,13 +23,16 @@ router = APIRouter(tags=["Scan"])
 
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 # Configure s3 bucket
-BUCKET_NAME = os.environ["BUCKET_NAME"]
-ACCESS_KEY = os.environ["ACCESS_KEY"]
-SECRET_ACCESS_KEY = os.environ["SECRET_ACCESS_KEY"]
-REGION = os.environ["REGION"]
-S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
+# s3_client = boto3.client(
+#     's3',
+#     aws_access_key_id=os.getenv("ACCESS_KEY"),
+#     aws_secret_access_key=os.getenv("SECRET_ACCESS_KEY"),
+#     region_name=os.getenv("REGION"),
+# )
+# S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
 
 # #Load the CLIP model and processor from Huggling Face
 clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -47,16 +50,6 @@ clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 # model.to(device)
 # model.eval() 
 
-# Initialize the S3 client
-s3_client = boto3.client(
-    's3',
-    aws_access_key_id=ACCESS_KEY,
-    aws_secret_access_key=SECRET_ACCESS_KEY,
-    region_name=REGION
-)
-S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
-
-
 food_model = genai.GenerativeModel(
   model_name="gemini-1.5-flash",
   generation_config=generation_config_scan,
@@ -71,25 +64,25 @@ def generate_unique_filename(original_filename: str) -> str:
     # Construct the unique filename
     return f"{file_name}_{timestamp}.{file_extension}"
 
-def upload_to_s3(file_path: str, bucket_name: str, object_name: str):
-    try:
-        s3_client.upload_file(file_path, bucket_name, object_name)
-        return f"{S3_BASE_URL}{object_name}"
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File not found")
-    except NoCredentialsError:
-        raise HTTPException(status_code=403, detail="Credentials not available")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# def upload_to_s3(file_path: str, bucket_name: str, object_name: str):
+#     try:
+#         s3_client.upload_file(file_path, bucket_name, object_name)
+#         return f"{S3_BASE_URL}{object_name}"
+#     except FileNotFoundError:
+#         raise HTTPException(status_code=404, detail="File not found")
+#     except NoCredentialsError:
+#         raise HTTPException(status_code=403, detail="Credentials not available")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
     
-def delete_image_from_s3(bucket_name: str, object_name: str):
-    try:
-        s3_client.delete_object(Bucket = bucket_name, Key = object_name)
-        print(f"Object {object_name} deleted successfully")
-    except NoCredentialsError:
-        print("S3 credentials not available")
-    except ClientError as e:
-        print(f"Error deleting object: {e}")
+# def delete_image_from_s3(bucket_name: str, object_name: str):
+#     try:
+#         s3_client.delete_object(Bucket = bucket_name, Key = object_name)
+#         print(f"Object {object_name} deleted successfully")
+#     except NoCredentialsError:
+#         print("S3 credentials not available")
+#     except ClientError as e:
+#         print(f"Error deleting object: {e}")
 
 @router.post("/process-image")
 async def process_image(file: UploadFile = File(...), db: Session = Depends(get_db), user:dict = Depends(get_user)):
@@ -97,6 +90,8 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         mime_type = file.content_type
         file_extension = mime_type.split('/')[-1]
         image = Image.open(io.BytesIO(await file.read()))
+        image = image.convert("RGB")  # Ensure image is in RGB mode
+        image = image.resize((256, 256))
         file_path = f"temp_image.{file_extension}"
         image.save(file_path)
 
@@ -162,15 +157,17 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         result = extract_json(clean_json_string)
 
         # Upload image to S3 in the 'Scan images/' folder
-        filename = generate_unique_filename(file.filename)
-        s3_key = f"Scan images/{filename}"
-        s3_url = upload_to_s3(file_path, BUCKET_NAME, s3_key)
-        result['image'] = s3_url
+        # filename = generate_unique_filename(file.filename)
+        # s3_key = f"Scan images/{filename}"
+        # s3_url = upload_to_s3(file_path, BUCKET_NAME, s3_key)
+        # result['image'] = ""
 
         scan_history = ScanHistory(user_id=user.id, scan_result=result)
         db.add(scan_history)
         db.commit()
         db.refresh(scan_history)
+
+        image.close()
 
         # Now, convert the cleaned string to a JSON object
         return result
@@ -192,8 +189,8 @@ async def delete_scan_history(scan_id: int, db: Session = Depends(get_db), user:
     db.delete(scan)
     db.commit()
     # Delete image form s3 bucket
-    image = scan.scan_result["image"]
-    s3_key = f"Scan images/{image}"
-    delete_image_from_s3(bucket_name=BUCKET_NAME, object_name=s3_key)
+    # image = scan.scan_result["image"]
+    # s3_key = f"Scan images/{image}"
+    # delete_image_from_s3(bucket_name=BUCKET_NAME, object_name=s3_key)
    
-    return {"detail": f"Scan history deleted successfully {image}"}
+    return {"detail": f"Scan history deleted successfully {scan}"}
