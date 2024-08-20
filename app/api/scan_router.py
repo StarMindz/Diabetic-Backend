@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from transformers import CLIPProcessor, CLIPModel
 import torch
-import open_clip
 import torch.nn.functional as F
 import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
