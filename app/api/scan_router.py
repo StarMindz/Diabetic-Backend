@@ -136,7 +136,7 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         best_label = possible_food_labels[best_label_idx]
         # best_label = food_classes[predicted_class_index]
 
-        if probs[0][best_label_idx].item() > 0.4 > 0.4:
+        if probs[0][best_label_idx].item() > 0.4:
             prompt = f"You are to serve as the nutritionist for an app that help diabetic patients get all the needed nutritional information about Nigerian local meals to make better diet decision and determine if the meal is safe for them or not. Get the accurate informations for {best_label}. Be very detailed in your responses"
             response = food_model.generate_content(prompt)
         else:
