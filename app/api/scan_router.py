@@ -12,9 +12,6 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from transformers import CLIPProcessor, CLIPModel
 import torch
-import torch.nn.functional as F
-import boto3
-from botocore.exceptions import NoCredentialsError, ClientError
 import torch
 import os
 import io
@@ -23,7 +20,7 @@ router = APIRouter(tags=["Scan"])
 
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-BUCKET_NAME = os.environ["BUCKET_NAME"]
+# BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 # Configure s3 bucket
 # s3_client = boto3.client(
@@ -90,8 +87,8 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         mime_type = file.content_type
         file_extension = mime_type.split('/')[-1]
         image = Image.open(io.BytesIO(await file.read()))
-        image = image.convert("RGB")  # Ensure image is in RGB mode
-        image = image.resize((256, 256))
+        # image = image.convert("RGB")  # Ensure image is in RGB mode
+        # image = image.resize((256, 256))
         file_path = f"temp_image.{file_extension}"
         image.save(file_path)
 
