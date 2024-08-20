@@ -19,7 +19,7 @@ genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 model = genai.GenerativeModel(
   model_name="gemini-1.5-pro",
   generation_config=generation_config_recommendation,
-  system_instruction="I need your response in the form of a json that looks like this, where meal_id is the is the index of the recommended meal in my list of possible meals\n{\n  \"breakfast\": [\n      meal_id\n  ],\n  \"lunch\": [\n      meal_id\n  ],\n  \"dinner\": [\n      meal_id\n  ],\n  \"snack\": [\n      meal_id\n  ]\n}\n\n",
+  system_instruction="I need your response in the form of a json that looks like this, where meal_id is the is the index of the recommended meal in my list of possible meals. Do not use meal names directly\n{\n  \"breakfast\": [\n      meal_id\n  ],\n  \"lunch\": [\n      meal_id\n  ],\n  \"dinner\": [\n      meal_id\n  ],\n  \"snack\": [\n      meal_id\n  ]\n}\n\n",
 )
 
 def clean_json_string(text_response):
@@ -133,7 +133,5 @@ async def get_recommendations(db: Session = Depends(get_db), user: dict = Depend
         "image": valid_recipes[int(result["snack"][0])].image,
         "recipe": valid_recipes[int(result["snack"][0])]
     }
-        
-
     
     return result
