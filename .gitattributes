@@ -2,3 +2,4 @@
 clip_finetuned_model/clip_finetuned3.pth filter=lfs diff=lfs merge=lfs -text
 clip_finetuned_model/clip_finetuned3.pth filter=lfs diff=lfs merge=lfs -text
 clip_finetuned_model filter=lfs diff=lfs merge=lfs -text
+clip_models/clip_finetuned3.pth filter=lfs diff=lfs merge=lfs -text
