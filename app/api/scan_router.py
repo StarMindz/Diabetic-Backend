@@ -3,15 +3,18 @@ from datetime import datetime
 from app.schemas.scan_schema import ScanHistorySchema
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status
+from botocore.exceptions import NoCredentialsError, ClientError
 from sqlalchemy.orm import Session
 from app.database import get_db
+import boto3
+import open_clip
 from app.security import  get_user
 from app.models.scan_model import ScanHistory
 from PIL import Image
 from dotenv import load_dotenv
 import google.generativeai as genai
-from transformers import CLIPProcessor, CLIPModel
-import torch
+import torch.nn.functional as F
+# from transformers import CLIPProcessor, CLIPModel
 import torch
 import os
 import io
@@ -20,32 +23,32 @@ router = APIRouter(tags=["Scan"])
 
 load_dotenv()
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-# BUCKET_NAME = os.environ["BUCKET_NAME"]
+BUCKET_NAME = os.environ["BUCKET_NAME"]
 
 # Configure s3 bucket
-# s3_client = boto3.client(
-#     's3',
-#     aws_access_key_id=os.getenv("ACCESS_KEY"),
-#     aws_secret_access_key=os.getenv("SECRET_ACCESS_KEY"),
-#     region_name=os.getenv("REGION"),
-# )
-# S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv("ACCESS_KEY"),
+    aws_secret_access_key=os.getenv("SECRET_ACCESS_KEY"),
+    region_name=os.getenv("REGION"),
+)
+S3_BASE_URL = f'https://{BUCKET_NAME}.s3.amazonaws.com/'
 
 # #Load the CLIP model and processor from Huggling Face
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+# clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+# clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
 # Load the pretrained CLIP model
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-# model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained=False)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained=False)
 
 # Load the fine-tuned weights
-# model.load_state_dict(torch.load('clip_models/clip_finetuned3.pth', map_location=device)) 
+model.load_state_dict(torch.load('clip_models/clip_finetuned3.pth', map_location=device)) 
 
 
 # Move the model to the correct device and enter eval mode
-# model.to(device)
-# model.eval() 
+model.to(device)
+model.eval() 
 
 food_model = genai.GenerativeModel(
   model_name="gemini-1.5-flash",
@@ -61,25 +64,25 @@ def generate_unique_filename(original_filename: str) -> str:
     # Construct the unique filename
     return f"{file_name}_{timestamp}.{file_extension}"
 
-# def upload_to_s3(file_path: str, bucket_name: str, object_name: str):
-#     try:
-#         s3_client.upload_file(file_path, bucket_name, object_name)
-#         return f"{S3_BASE_URL}{object_name}"
-#     except FileNotFoundError:
-#         raise HTTPException(status_code=404, detail="File not found")
-#     except NoCredentialsError:
-#         raise HTTPException(status_code=403, detail="Credentials not available")
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
+def upload_to_s3(file_path: str, bucket_name: str, object_name: str):
+    try:
+        s3_client.upload_file(file_path, bucket_name, object_name)
+        return f"{S3_BASE_URL}{object_name}"
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
+    except NoCredentialsError:
+        raise HTTPException(status_code=403, detail="Credentials not available")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
-# def delete_image_from_s3(bucket_name: str, object_name: str):
-#     try:
-#         s3_client.delete_object(Bucket = bucket_name, Key = object_name)
-#         print(f"Object {object_name} deleted successfully")
-#     except NoCredentialsError:
-#         print("S3 credentials not available")
-#     except ClientError as e:
-#         print(f"Error deleting object: {e}")
+def delete_image_from_s3(bucket_name: str, object_name: str):
+    try:
+        s3_client.delete_object(Bucket = bucket_name, Key = object_name)
+        print(f"Object {object_name} deleted successfully")
+    except NoCredentialsError:
+        print("S3 credentials not available")
+    except ClientError as e:
+        print(f"Error deleting object: {e}")
 
 @router.post("/process-image")
 async def process_image(file: UploadFile = File(...), db: Session = Depends(get_db), user:dict = Depends(get_user)):
@@ -92,42 +95,43 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         file_path = f"temp_image.{file_extension}"
         image.save(file_path)
 
-        # input_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
-        # input_tensor = input_tensor.to(device)
+        input_tensor = preprocess(image).unsqueeze(0)  # Add batch dimension
+        input_tensor = input_tensor.to(device)
 
-        labels = [f"A photo of {label} nigerian food" for label in possible_food_labels]
+        # labels = [f"A photo of {label} nigerian food" for label in possible_food_labels]
 
-        inputs = clip_processor(text=labels, images=image, return_tensors="pt", padding=True)
-        outputs = clip_model(**inputs)
-        logits_per_image = outputs.logits_per_image # this is the image-text similarity score
-        probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilities
+        # inputs = clip_processor(text=labels, images=image, return_tensors="pt", padding=True)
+        # outputs = clip_model(**inputs)
+        # logits_per_image = outputs.logits_per_image # this is the image-text similarity score
+        # probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilities
 
-        # with torch.no_grad():
-        #     outputs = model(input_tensor)
+        with torch.no_grad():
+            outputs = model(input_tensor)
     
-        #     # If outputs is a tuple, extract the logits (usually the first element)
-        #     if isinstance(outputs, tuple):
-        #         outputs = outputs[0]
+            # If outputs is a tuple, extract the logits (usually the first element)
+            if isinstance(outputs, tuple):
+                outputs = outputs[0]
     
-        #     # Apply softmax to get probabilities
-        #     probabilities = F.softmax(outputs, dim=1)
+            # Apply softmax to get probabilities
+            probabilities = F.softmax(outputs, dim=1)
     
-        #     # Get the predicted class index and its probability
-        #     _, predicted = torch.max(probabilities, 1)
-        #     predicted_class_index = predicted.item()
-        #     predicted_class_probability = probabilities[0][predicted_class_index].item()
+            # Get the predicted class index and its probability
+            _, predicted = torch.max(probabilities, 1)
+            predicted_class_index = predicted.item()
+            predicted_class_probability = probabilities[0][predicted_class_index].item()
     
-        # # Print the predicted class index and the corresponding probability
-        # print(f'Predicted class index: {predicted_class_index}')
-        # print(f'Probability assigned to predicted class: {predicted_class_probability*100 }')
-        # print(f'Predicted food: {food_classes[predicted_class_index]}')
+        # Print the predicted class index and the corresponding probability
+        print(f'Predicted class index: {predicted_class_index}')
+        print(f'Probability assigned to predicted class: {predicted_class_probability*100 }')
+        print(f'Predicted food: {food_classes[predicted_class_index]}')
 
 
-        best_label_idx = torch.argmax(probs, dim=1).item()
-        best_label = possible_food_labels[best_label_idx]
-        # best_label = food_classes[predicted_class_index]
+        # best_label_idx = torch.argmax(probs, dim=1).item()
+        # best_label = possible_food_labels[best_label_idx]
+        best_label = food_classes[predicted_class_index]
+        # probs[0][best_label_idx].item()
 
-        if probs[0][best_label_idx].item() > 0.4:
+        if predicted_class_probability*100 > 0.4:
             prompt = f"You are to serve as the nutritionist for an app that help diabetic patients get all the needed nutritional information about Nigerian local meals to make better diet decision and determine if the meal is safe for them or not. Get the accurate informations for {best_label}. Be very detailed in your responses"
             response = food_model.generate_content(prompt)
         else:
@@ -154,10 +158,10 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         result = extract_json(clean_json_string)
 
         # Upload image to S3 in the 'Scan images/' folder
-        # filename = generate_unique_filename(file.filename)
-        # s3_key = f"Scan images/{filename}"
-        # s3_url = upload_to_s3(file_path, BUCKET_NAME, s3_key)
-        # result['image'] = ""
+        filename = generate_unique_filename(file.filename)
+        s3_key = f"Scan images/{filename}"
+        s3_url = upload_to_s3(file_path, BUCKET_NAME, s3_key)
+        result['image'] = ""
 
         scan_history = ScanHistory(user_id=user.id, scan_result=result)
         db.add(scan_history)
@@ -186,8 +190,8 @@ async def delete_scan_history(scan_id: int, db: Session = Depends(get_db), user:
     db.delete(scan)
     db.commit()
     # Delete image form s3 bucket
-    # image = scan.scan_result["image"]
-    # s3_key = f"Scan images/{image}"
-    # delete_image_from_s3(bucket_name=BUCKET_NAME, object_name=s3_key)
+    image = scan.scan_result["image"]
+    s3_key = f"Scan images/{image}"
+    delete_image_from_s3(bucket_name=BUCKET_NAME, object_name=s3_key)
    
     return {"detail": f"Scan history deleted successfully {scan}"}
