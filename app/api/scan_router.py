@@ -43,7 +43,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained=False)
 
 # Load the fine-tuned weights
-model.load_state_dict(torch.load('clip_models/clip_finetuned3.pth', map_location=device)) 
+model_state_dict = torch.load('clip_models/clip_finetuned3.pth', map_location=device,  weights_only=True)
+model.load_state_dict(model_state_dict)
 
 
 # Move the model to the correct device and enter eval mode
@@ -131,7 +132,7 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         best_label = food_classes[predicted_class_index]
         # probs[0][best_label_idx].item()
 
-        if predicted_class_probability*100 > 0.4:
+        if predicted_class_probability*100 > 0.39:
             prompt = f"You are to serve as the nutritionist for an app that help diabetic patients get all the needed nutritional information about Nigerian local meals to make better diet decision and determine if the meal is safe for them or not. Get the accurate informations for {best_label}. Be very detailed in your responses"
             response = food_model.generate_content(prompt)
         else:
@@ -161,7 +162,7 @@ async def process_image(file: UploadFile = File(...), db: Session = Depends(get_
         filename = generate_unique_filename(file.filename)
         s3_key = f"Scan images/{filename}"
         s3_url = upload_to_s3(file_path, BUCKET_NAME, s3_key)
-        result['image'] = ""
+        result['image'] = s3_url
 
         scan_history = ScanHistory(user_id=user.id, scan_result=result)
         db.add(scan_history)

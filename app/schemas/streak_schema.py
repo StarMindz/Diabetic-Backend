@@ -10,4 +10,4 @@ class StreakResponse(BaseModel):
     week: Any  # Or use `dict` if the structure is known
 
     class Config:
-        orm_mode = True
+        from_attributes = True

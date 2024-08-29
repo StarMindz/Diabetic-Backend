@@ -30,7 +30,7 @@ class MealOut(BaseModel):
     recipe: RecipeOut
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class MealPlanOut(BaseModel):
     id: int
@@ -38,7 +38,7 @@ class MealPlanOut(BaseModel):
     meals: List[MealOut]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class Recipe(BaseModel):
     name: str
