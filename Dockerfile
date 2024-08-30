@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container d
+# Copy the requirements file into the container
 COPY requirements.txt .
 
 # Install any necessary dependencies
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip \
+# Removed --mount=type=cache to avoid any pip caching
+RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire project directory into the container
